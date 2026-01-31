@@ -1,14 +1,27 @@
 import numpy as np
-from matrix_data import matrix_2 # type: ignore
+import pandas as pd
+from matrix_data import matrix_4 # type: ignore
+
+# This imports a graph function, to make graphing more simple and take up less space 
+from matrix_data import graph    # type: ignore
+
 
 ##----------Variables to be changed-------------#
 threshold_percentage = 60
 data_shown = 6
+fileName = "SL_strip_a.csv"
 #----------------------------------------------#
 
+# -----Reads in the File for Pandas Modifications------------------
+df = pd.read_csv(fileName, header=None)  # no header
+Z = df.to_numpy(dtype=float)
+Z = np.nan_to_num(Z, nan=0.0)  # Converts NaN → 0
+Z[Z < 0] = 0     #Turns every negative number into a 0 
+#-------------------------------------------------------------------
 
-# Initializes a Matrix, with 1s as the ground/nothing, and 3s as the object
-initial_matrix = matrix_2
+
+# Initializes a Matrix, either from a CSV or from a predetermined data set
+initial_matrix = matrix_4
 
 
 # Finds the gradient of the x and y
@@ -47,53 +60,68 @@ print("Edge matrix in binary format: \n", edges_numeric, "\n")
 # Finds the indices ([1,1] or [4,5]) where edges_numeric is equal to 1
 # Essentially it finds the locations of all cells labeled as "edges", stores them in a 
 # matrix of indices
-ones_location = np.argwhere(edges_numeric==1)
-print("Location matrix of the edges: \n", ones_location[:data_shown], "......\n")
+edges_location = np.argwhere(edges_numeric==1)
+print("Location matrix of the edges: \n", edges_location[:data_shown], "......\n")
 
-#TODO rename ones_xvals and ones_yvals to be representative of columns and rows
+
 # Extracts the x values and the y values, separates them into two different 1D matrices
-ones_xvals = ones_location[:,1]  
-ones_yvals = ones_location[:,0]  
-ones_xvals_max, ones_xvals_min = ones_xvals.max(), ones_xvals.min()
-ones_yvals_max, ones_yvals_min = ones_yvals.max(), ones_yvals.min()
-print("X values of the edges: \n", ones_xvals[:data_shown], ".......\n")
-print("Y values of the edges: \n", ones_yvals[:data_shown], ".......\n")
-print("X value max, min: \n", ones_xvals_max, ", ",ones_xvals_min)
-print("Y value max, min: \n", ones_yvals_max, ", ",ones_yvals_min)
+edges_columns = edges_location[:,1]  
+edges_rows = edges_location[:,0]  
+print("X values of the edges: \n", edges_columns[:data_shown], ".......\n")
+print("Y values of the edges: \n", edges_rows[:data_shown], ".......\n")
+
+
+# Extracts the maximum and minimum values of the edge's columns and rows 
+edges_columns_max, edges_columns_min = edges_columns.max(), edges_columns.min()
+edges_rows_max, edges_rows_min = edges_rows.max(), edges_rows.min()
+print("X value max, min: \n", edges_columns_max, ", ",edges_columns_min)
+print("Y value max, min: \n", edges_rows_max, ", ",edges_rows_min)
 
 
 # Calculates the average location of the edges, finding the centroid 
-avg_ones_xvals = np.mean(ones_xvals)
-avg_ones_yvals = np.mean(ones_yvals)
-print("Average of the X values: \n", avg_ones_xvals, "\n")
-print("Average of the Y values: \n", avg_ones_yvals, "\n")
+avg_edges_columns = np.mean(edges_columns)
+avg_edges_rows = np.mean(edges_rows)
+print("Average of the X values: \n", avg_edges_columns, "\n")
+print("Average of the Y values: \n", avg_edges_rows, "\n")
 
 
 # Temporarily displays the matrix and shows the centerpoint by labeling it with a 9,
 # before changing it back to its original value
-temp = edges_numeric[int(avg_ones_yvals), int(avg_ones_xvals)]
-edges_numeric[int(avg_ones_yvals), int(avg_ones_xvals)] = 9
+temp = edges_numeric[int(avg_edges_rows), int(avg_edges_columns)]
+edges_numeric[int(avg_edges_rows), int(avg_edges_columns)] = 9
 print("Identified centroid: \n", edges_numeric, "\n")
-edges_numeric[int(avg_ones_yvals), int(avg_ones_xvals)] = temp
+edges_numeric[int(avg_edges_rows), int(avg_edges_columns)] = temp
 
-
+# This finds the total width of the matrix
 total_width = edges_numeric.shape[1]
 print("Total width of matrix: \n", total_width)
 
+
+# This creates an identical matrix, filled with zeros, to identify the centerline
 centerline = np.zeros_like(edges_numeric, dtype=float) 
 
 
-#TODO comment this
+# Finds the centerline, by taking vertical slices of the shape, and finding the middle between 
+# the uppermost edge and the lowermost edge of that slice
 col = 0
 for column in range(total_width):
+    # This grabs a slice from the edges_numeric matrix
     vert_slice = edges_numeric[:, column]
+
+    # This finds all of the locations of any edges on that slice 
     locations_vert_slice = np.where(vert_slice == 1)[0]
+
+    # If there are edges identified in a slice, it determines the central Y value in the shape
+    # Then it adds a 1 in the centerline matrix at that exact index 
     if locations_vert_slice.size != 0:
         location_y = (locations_vert_slice[0] + locations_vert_slice[-1])/2
         centerline[int(np.round(location_y)), col] = 1
     col+=1
 
-print("Centerline is: \n", centerline)
+
+# This graphs the initial matrix, then overlays the centerline over it in red 
+graph(initial_matrix, "centerline", centerline)
+
 
 
 
