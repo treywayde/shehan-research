@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
-from matrix_data import matrix_4 # type: ignore
+from matrix_data import matrix_2 # type: ignore
 
 # This imports a graph function, to make graphing more simple and take up less space 
 from matrix_data import graph    # type: ignore
 
 
 ##----------Variables to be changed-------------#
-threshold_percentage = 60
+threshold_percentage = 80
 data_shown = 6
 fileName = "SL_strip_a.csv"
 #----------------------------------------------#
@@ -21,8 +21,9 @@ Z[Z < 0] = 0     #Turns every negative number into a 0
 
 
 # Initializes a Matrix, either from a CSV or from a predetermined data set
-initial_matrix = matrix_4
-
+initial_matrix = Z
+cols_length = len(initial_matrix)
+rows_length = len(initial_matrix[0])
 
 # Finds the gradient of the x and y
 matrix_y, matrix_x = np.gradient(initial_matrix)  # order is rows(y), cols(x)
@@ -32,7 +33,7 @@ matrix_y, matrix_x = np.gradient(initial_matrix)  # order is rows(y), cols(x)
 
 # Finds the magnitude of the 2D gradients, to give an overall gradient
 unrounded_gradient_magnitude = np.sqrt(matrix_x**2 + matrix_y**2)
-gradient_magnitude = np.round((unrounded_gradient_magnitude), 1)
+gradient_magnitude = np.round((unrounded_gradient_magnitude), 9)
 print("Gradient: \n", (gradient_magnitude),"\n")
 
 
@@ -91,6 +92,9 @@ temp = edges_numeric[int(avg_edges_rows), int(avg_edges_columns)]
 edges_numeric[int(avg_edges_rows), int(avg_edges_columns)] = 9
 print("Identified centroid: \n", edges_numeric, "\n")
 edges_numeric[int(avg_edges_rows), int(avg_edges_columns)] = temp
+centroid_cols = avg_edges_columns
+centroid_rows = avg_edges_rows
+
 
 # This finds the total width of the matrix
 total_width = edges_numeric.shape[1]
@@ -120,8 +124,68 @@ for column in range(total_width):
 
 
 # This graphs the initial matrix, then overlays the centerline over it in red 
-graph(initial_matrix, "centerline", centerline)
+# graph(initial_matrix, "centerline", centerline)
 
+# creates an array of indices where the centerline binary matrix is one
+centerline_location = np.argwhere(centerline==1)
+print("Centerline Location: \n", centerline_location, "\n")
+
+
+# This pulls out all of the rows and columns into a separate array, then determines how 
+# many cells there are that are identified as the centerline
+CL_rows = centerline_location[:,0]
+CL_cols = centerline_location[:,1]
+num_of_CL_cells = CL_cols.shape[0]
+print("Centerline Rows: \n", CL_rows, "\n")
+print("Centerline Columns: \n", CL_cols, "\n")
+print("Number of Centerline cells: \n", num_of_CL_cells, "\n")
+
+
+# This finds the relative rise/run for the centerline, two cells at a time. Run is not included, 
+# because it is assumed to be 1 between each cell. Along with this, we filter out some of the first 
+# values and last values, because the centerline is skewed along the edges of a turned shape
+percent_cut = 10
+num_cut_cells = int(np.round(num_of_CL_cells * percent_cut * 0.01))
+print("Number of cut cells: \n", num_cut_cells, "\n")
+
+# This for-loop goes from the bottom bound to top bound
+slope = 0
+for num in range(num_cut_cells, num_of_CL_cells - num_cut_cells):
+    slope += (CL_rows[num +1] - CL_rows[num]) / (num_of_CL_cells - 2 * num_cut_cells)
+print("Slope: \n", slope, "\n")
+
+# Calculates the degrees of the slope 
+angle = np.arctan(slope)
+degree = angle * 180/np.pi
+print("Degree: \n", degree, "\n")
+
+
+# Makes a blank matrix the same size as the original
+rotated_matrix = np.zeros_like(initial_matrix, dtype=float)
+
+
+# For each cell in the initial matrix, it finds where that cell should be when rotated. So, this
+# does not change any values, or modify them, it simply moves them to where they would be. 
+for i in range(cols_length):
+    for j in range(rows_length):
+
+        # Finds the location of any cell relative to the centroid, as if the centroid was at (0,0)
+        init_cols = i - centroid_cols
+        init_rows = j - centroid_rows
+
+        # Finds the new location of that cell, in reference to the centroid
+        new_cols = init_cols * np.cos(angle) - init_rows * np.sin(angle)
+        new_rows = init_cols * np.sin(angle) + init_rows * np.cos(angle)
+
+        # Takes away the influence of the centroid, and finds the location on the matrix
+        i_new = int(np.round(new_cols + centroid_cols))
+        j_new = int(np.round(new_rows + centroid_rows))
+
+        # If the location is within the matrix bounds, it adds it to the rotated matrix
+        if 0 <= i_new < cols_length and 0 <= j_new < rows_length:
+                rotated_matrix[i_new][j_new] = initial_matrix[i][j]
+
+graph(rotated_matrix, "Rotated Matrix")
 
 
 
