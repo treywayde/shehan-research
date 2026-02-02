@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from matrix_data import matrix_2 # type: ignore
+from matrix_data import matrix_4 # type: ignore
 
 # This imports a graph function, to make graphing more simple and take up less space 
 from matrix_data import graph    # type: ignore
@@ -97,7 +97,7 @@ centroid_rows = avg_edges_rows
 
 
 # This finds the total width of the matrix
-total_width = edges_numeric.shape[1]
+total_width = len(edges_numeric[1])
 print("Total width of matrix: \n", total_width)
 
 
@@ -163,27 +163,30 @@ print("Degree: \n", degree, "\n")
 # Makes a blank matrix the same size as the original
 rotated_matrix = np.zeros_like(initial_matrix, dtype=float)
 
+max_value = np.max(initial_matrix)
+threshold_for_rotation = 0.1 * max_value
 
 # For each cell in the initial matrix, it finds where that cell should be when rotated. So, this
 # does not change any values, or modify them, it simply moves them to where they would be. 
 for i in range(cols_length):
     for j in range(rows_length):
+        if initial_matrix[i,j] >= threshold_for_rotation:
 
-        # Finds the location of any cell relative to the centroid, as if the centroid was at (0,0)
-        init_cols = i - centroid_cols
-        init_rows = j - centroid_rows
+            # Finds the location of any cell relative to the centroid, as if the centroid was at (0,0)
+            init_cols = i - centroid_cols
+            init_rows = j - centroid_rows
 
-        # Finds the new location of that cell, in reference to the centroid
-        new_cols = init_cols * np.cos(angle) - init_rows * np.sin(angle)
-        new_rows = init_cols * np.sin(angle) + init_rows * np.cos(angle)
+            # Finds the new location of that cell, in reference to the centroid
+            new_cols = init_cols * np.cos(angle) - init_rows * np.sin(angle)
+            new_rows = init_cols * np.sin(angle) + init_rows * np.cos(angle)
 
-        # Takes away the influence of the centroid, and finds the location on the matrix
-        i_new = int(np.round(new_cols + centroid_cols))
-        j_new = int(np.round(new_rows + centroid_rows))
+            # Takes away the influence of the centroid, and finds the location on the matrix
+            i_new = int(np.round(new_cols + centroid_cols))
+            j_new = int(np.round(new_rows + centroid_rows))
 
-        # If the location is within the matrix bounds, it adds it to the rotated matrix
-        if 0 <= i_new < cols_length and 0 <= j_new < rows_length:
-                rotated_matrix[i_new][j_new] = initial_matrix[i][j]
+            # If the location is within the matrix bounds, it adds it to the rotated matrix
+            if 0 <= i_new < cols_length and 0 <= j_new < rows_length:
+                    rotated_matrix[i_new][j_new] = initial_matrix[i][j]
 
 graph(rotated_matrix, "Rotated Matrix")
 
